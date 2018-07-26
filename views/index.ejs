@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Home page</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/backgroundCover.css">
+</head>
+
+<body>
+    <% include templateNav.ejs %>
+
+    <% include backgroundCoverTemplate.ejs %>
+
+        <div class="maincontent">
+            <div class="contentbox">
+                <h1 class="display-3">WikiLatic</h1>
+                <p class="lead">A small data analytic web application.</p>
+                <hr class="my-4">
+                <p>compute various summary analytics at server side and present the results on a web page. You may also need
+                    to download latest data from the original data source and append that to the data set</p>
+            </div>
+        </div>
+
+        <div class="shadow">
+            <div class="loginDiv">
+                <div class="btnDiv">
+                    <button class="btn btn-primary closeBtn" id="closeBtn">X</button>
+                </div>
+                <div class="formwrapper">
+                    <form action="/" method="POST" id="loginForm">
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label">Username</label>
+                            <div class="col-sm-10">
+                                <input type="text" name="username" class="form-control" placeholder="Enter Username" autofocus="true">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 col-form-label">Password</label>
+                            <div class="col-sm-10">
+                                <input type="password" name="password" class="form-control" placeholder="Enter Password">
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" id="loginSubmitBtn">Login</button>
+                        <div class="alert alert-danger alertInfo">
+                            <strong>Danger!</strong> Indicates a dangerous or potentially negative action.
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <script src="/js/backgroundCoverTmp.js"></script>
+        <%if(!login) { %>
+            <script>
+                $(document).ready(() => {
+                    $('#loginBtnNav').click((event => {
+                        $('.shadow').fadeIn(400);
+                        $('[name=username]').focus();
+                    }));
+
+                    $('#closeBtn').click((event) => {
+                        $('.shadow').fadeOut(400);
+                    });
+
+                    $('#loginSubmitBtn').click((event) => {
+                        if (!checkInput()) {
+                            $('.alertInfo').html('Please fill out username and password');
+                            $('.alertInfo').css('display', 'block');
+                            return;
+                        }
+
+                        $('.alertInfo').css('display', 'none');
+                        var formData = $('#loginForm').serialize();
+                        $.ajax({
+                            url: "/",
+                            type: "post",
+                            data: formData,
+                            dataType: "json",
+                            success: (data) => {
+                                if (data.result == 'success') {
+                                    $('.alertInfo').css('display', 'none');
+                                    window.location = '/';
+                                } else {
+                                    $('.alertInfo').css('display', 'block');
+                                    $('.alertInfo').html('Username/Password incorrect');
+                                }
+                            }
+                        });
+                    });
+
+                    var checkInput = () => {
+                        var username = $('[name=username]').val();
+                        var passwd = $('[name=password]').val();
+                        return (username.length > 0 && passwd.length > 0);
+                    }
+                });
+            </script>
+            <% } %>
+
+</body>
+
+</html>

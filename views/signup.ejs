@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Sign up</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <style>
+        .alertDiv{
+            margin-top: 10px;
+        }
+    </style>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    <% include templateNav.ejs %>
+
+    <div class="signupcontainer">
+        <form method="POST" action="/signup" class="formsignup">
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label>Username</label>
+                    <input type="text" class="form-control" name="username" placeholder="Username">
+                </div>
+                <div class="form-group col-md-12">
+                    <label>Password</label>
+                    <input type="password" class="form-control" name="password" placeholder="Password">
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="inputAddress">Email</label>
+                    <input type="email" class="form-control" name="email" placeholder="eg. example@gmail.com">
+                </div>
+                <div class="form-group col-md-12">
+                    <label>First Name</label>
+                    <input type="text" class="form-control" name="firstname" placeholder="First Name">
+                </div>
+                <div class="form-group col-md-12">
+                    <label>Last Name</label>
+                    <input type="text" class="form-control" name="lastname" placeholder="Last Name">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="signupBtn">Sign up</button>
+
+            <% if(alert) { %>
+            <div class="alert alert-danger alertDiv">
+                Username exist    
+            </div>
+            <% } %>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(() => {
+            $('#signupBtn').attr('disabled', true);
+            $('input').keyup((event) => {
+                checkAllInput();
+            });
+
+            var checkAllInput = () => {
+                var inputs = $('input');
+                $(inputs).each( (index,element) => {
+                    if($(element).val() == ''){
+                        $('#signupBtn').attr('disabled', true);
+                        return false;
+                    }else{
+                        if(index + 1 == $(element).length) {
+                            $('#signupBtn').attr('disabled', false);            
+                            return true;
+                        }
+                    }
+                });
+            }
+
+           // $('.alertInfo').show();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Individual analytics</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <link rel="stylesheet" href="/css/index.min.css">
+    <link rel="stylesheet" href="/css/analytics.min.css">
+    <link rel="stylesheet" href="/css/backgroundCover.min.css">
+    <style>
+    #formid{
+        margin: 10px 10px;
+    }
+
+    input[type=checkbox]
+    {
+      display: inline-block; 
+      float: right; 
+    }
+
+    .barchartselectedUsers{
+        margin: 10px 10px;   
+    }
+    </style>
+</head>
+
+<body>
+    <% include templateNav.ejs %>
+
+    <% include backgroundCoverTemplate.ejs %>
+
+    <div class="wrapper">
+        <div class="leftDiv">
+            <div class="container">
+                <form action="post" name="formSelect" id="formid">
+                    <div class="input-group">
+                        <label for="id_label_single">
+                        Please select a article
+                        <select class=" js-example-basic-single js-states form-control" id="titleSelection" name="titleselect" >
+                            <option selected>Choose...</option>
+                            <%for(let index in titlesAndNum){
+                                let currentTitle = titlesAndNum[index]._id;
+                                let currentRevNum = " [" + titlesAndNum[index].numberOfRev + "]";
+                            %>
+                                <option value="<%=currentTitle%>"><%=currentTitle%><%=currentRevNum%></option>
+                            <%}%>
+                        </select>
+                        </label>
+                        <table class="table table-striped leftTable topHightRev" style="display:none" id="topFiveTable">
+                            <thead id="titleHighestArticles">
+                                <tr>
+                                    <th>#</th>                                    
+                                    <th>The top 5 regular users ranked by total revisions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-primary" id="displayBtn" value="display bar chart" type="button" style="display: none; margin: auto auto;">Display bar chart
+                    </button>
+                </form>
+            </div>
+            <div class="barchartselectedUsers" id="barchartselectedUsers"></div>
+        </div>
+        <div class="rightDiv" style="display: none">
+            <div class="barchart" id="barChartDiv"></div>
+            <div class="piechart" id="pieChartDiv"></div>
+        </div>
+    </div>
+
+    <script src="/js/backgroundCoverTmp.js"></script>
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+        google.charts.load('current', {'packages':['corechart']});
+    </script>
+    <script>
+        function checkboxEmptyChecking(){
+            let checkBoxs = $(':checkbox');
+            for(let i = 0; i < checkBoxs.length; i++) {
+                if (checkBoxs[i].checked) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        $(document).ready(()=>{
+
+            //blind the click event to displayBtn
+            $('#displayBtn').click(event => {
+                //check if checkbox empty or not
+                if(! checkboxEmptyChecking()){
+                    $('#barchartselectedUsers').hide();
+                    return ;
+                }
+                //window.pageYOffset
+                $('.backgroupCover').css('top', window.pageYOffset+"px");
+                $('.backgroupCover').show();
+                //submit form through ajax. 
+                let formData = $('[name=formSelect]').serialize();
+                $.post('/individual/showBarChart', formData).done(data => {
+                    console.log(data);
+                    //show barchart 
+                    drawBarchartForSelectedUsers(data);
+                    $('.backgroupCover').hide();
+                }).fail(err=>{
+                    $('.backgroupCover').hide();
+                });
+            });
+
+            //select2 initial 
+            $('.js-example-basic-single').select2();
+
+            //blind onchange event to 
+            $('#titleSelection').change((event)=>{
+                $('#barchartselectedUsers').hide();
+                let selection = $('#titleSelection').val();
+                if(selection == 'Choose...') {
+                    $('#topFiveTable').hide();
+                    $('.rightDiv:first').hide();
+                    $('#displayBtn').hide();    
+                    return ;
+                }
+                
+                $('.backgroupCover').css('top', 0+'px'); 
+                $('.backgroupCover').show();
+                ///excute ajax to grab data
+                var value = $('[name=formSelect]').serialize();
+                $.post('/individual', value).done(data=>{
+                    //update drop-down list 
+                    $("option[value='" + data.info.seletedArticle + "']").html(data.info.seletedArticle + " [" + data.info.numRevInSelectedArticle+"]");
+                    $('.js-example-basic-single').select2();
+                    
+                    //remove the last table
+                    let tbody = $('#topFiveTable tbody');
+                    tbody.html("");
+                    //get a array with top 5 people. 
+                    for(let index in data.tableInfo) {
+                        var tdNum = $("<td></td>").html(parseInt(index) + 1);
+                        var tdUser = $('<td></td>').html(data.tableInfo[index]._id);
+                        var inputCheckBox = $("<input type='checkbox' name=userSelect value=''>").val(data.tableInfo[index]._id);
+                        $($(inputCheckBox)[0]).click(checkboxClick);
+                        tdUser.append(inputCheckBox);
+                        $('<tr></tr>').append(tdNum, tdUser).appendTo(tbody);
+                    }
+                    if(data.tableInfo.length == 0) {
+                        $('#topFiveTable').hide();
+                        $('.rightDiv:first').hide();
+                        $('#displayBtn').hide();
+                    }else{
+                        //append button to the bottom at the table
+                        $('#topFiveTable').show();
+                        $('.rightDiv:first').show();
+                        $('#displayBtn').css("display", "block");
+                    }
+                    
+                    //show barchart.
+                    google.charts.setOnLoadCallback(drawBarChart(data.barchartInfo));     
+                    //show piechart.
+                    google.charts.setOnLoadCallback(drawPieChart(data.info));     
+                    
+                    $('.backgroupCover').hide();
+                })
+                .fail((xhr, status)=>{
+                    alert('getting data fail');
+                    $('.backgroupCover').hide();
+                })
+            });
+        });
+
+        //draw bar chart for selected users
+        function drawBarchartForSelectedUsers(info){
+            let jsonArray = [['Year']];
+            
+            //sort array
+            info.sort((a,b)=> {
+                if(a.numInyears[0]._id >= b.numInyears[0]._id) {
+                    return 1;
+                }else{
+                    return -1;
+                }
+            }); 
+
+            console.log(info);
+            //get min and max year
+            let minYear = 0;
+            let maxYear = 0;
+            for(let i in info) {
+                for(let j in info[i].numInyears){
+                    if(minYear >= info[i].numInyears[j]._id || minYear == 0) {
+                        minYear = info[i].numInyears[j]._id;
+                    }
+                    if(maxYear <= info[i].numInyears[j]._id || maxYear == 0) {
+                        maxYear = info[i].numInyears[j]._id;
+                    }
+                }
+            }
+            
+            //assembly an array for showing table
+            for(let index in info) {
+                jsonArray[0].push(info[index].name);
+            }
+
+            for(let min=minYear; min <= maxYear; min++) {
+                var tmpArray = [];
+                tmpArray.push(min.toString());
+                for (let i in info) {
+                    let num = 0;
+                    for (let j in info[i].numInyears) {    
+                        if(info[i].numInyears[j]._id == min) {
+                            num = (info[i].numInyears[j].num != null) ? info[i].numInyears[j].num : 0;
+                            break;
+                        }
+                    }
+                    tmpArray.push(num);
+                }
+                jsonArray.push(tmpArray);
+            }
+
+            var data = google.visualization.arrayToDataTable(jsonArray);
+            var options = {
+                'title': "Revision number distributed by year and by user type for this article ",
+                'width': '100%',
+                'height': 500,
+                vAxis: { gridlines: { count: 6 } }
+            };
+            var chart = new google.visualization.ColumnChart(document.getElementById('barchartselectedUsers'));
+            $('#barchartselectedUsers').show();
+            chart.draw(data, options);         
+        }
+
+        //draw pie chart
+            function drawPieChart(info) {
+                var options = {
+                    'title': "Revision number distributed by year and by user type for this article",
+                    'width': '100%',
+                    'height': 500
+                };
+
+                graphData = new google.visualization.DataTable();
+                graphData.addColumn('string', 'Element');
+                graphData.addColumn('number', 'Percentage');
+                graphData.addRows([
+                    ['Bot', info.revisionInBot],
+                    ['Admin', info.revisionInAdmin ],
+                    ['Regular User', info.revisionInRegularUser],
+                    ['anonymous', info.revisionInAnon ],
+                ]);
+                var chart = new google.visualization.PieChart(document.getElementById('pieChartDiv'));
+                chart.draw(graphData, options);
+            }
+        
+        //draw BarChart
+        function drawBarChart(jsonArray){
+            var data = google.visualization.arrayToDataTable(JSON.parse(jsonArray) );
+            var options = {
+                'title': "Revision number distributed by year and by user type for this article ",
+                'width': '100%',
+                'height': 500,
+                vAxis: { gridlines: { count: 9 } }
+            };
+            var chart = new google.visualization.ColumnChart(document.getElementById('barChartDiv'));
+            chart.draw(data, options);  
+        }
+
+        //checkbox event 
+        function checkboxClick(event){
+            //identify how many checkboxs has been checked. 
+            
+            console.log(this.checked);
+        }
+    </script>
+</body>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Overal analytics</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <!-- <script src="https://www.gstatic.com/charts/loader.js"></script> -->
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/analytics.css">
+    <link rel="stylesheet" href="/css/backgroundCover.css">
+</head>
+
+<body>
+     <% include templateNav.ejs %>
+    <% include backgroundCoverTemplate.ejs %>
+    <div class="wrapper">
+        <div class="leftDiv">
+            <div class="container">
+                <form class="form-inline formNumber" id="formNumber">
+                        <div class="form-group mx-sm-3 mb-2">
+                            <label class="form-control">Number: </label>
+                            <input type="text" name="number" class="form-control" id="inputNum">
+                        </div>
+                        <button type="button" class="btn btn-primary mb-2" id="searchBtn">Search</button>
+                </form>
+                
+                <!--Titles of the three articles with highest number of revisions. This is the default behavior. -->
+                <table class="table table-striped leftTable topHightRev">
+                    <thead id="titleHighestArticles">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Titles of the <%= info.highestArticles.length %> with highest number of revisions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% for(index in info.highestArticles) { 
+                            let currentNum = parseInt(index) + 1;
+                        %>
+                        <tr>
+                            <th scope="row"><%=currentNum %></th>
+                            <td><%=  info.highestArticles[index]._id %></td>
+                        </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+
+                 <!--Titles of the three articles with lowest number of revisions. This is the default behavior. -->
+                <table class="table table-striped leftTable lowLowRev">
+                    <thead id="titleLowestArticles">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Titles of the <%= info.lowestArticles.length %> with lowest number of revisions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% for(index in info.lowestArticles) { 
+                            let currentNum = parseInt(index) + 1;
+                        %>
+                        <tr>
+                            <th scope="row">
+                                <%=currentNum %>
+                            </th>
+                            <td>
+                                <%=  info.lowestArticles[index]._id %>
+                            </td>
+                        </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+
+                <!--The top 3 articles with the longest history (measured by age). -->
+                <table class="table table-striped leftTable topLongHistory">
+                    <thead id="titleLongestHistoryArticles">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">The top <%= info.longestHistoryArticles.length %> articles with the longest history</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyLongestHistoryArticles">
+                        <% for(index in info.longestHistoryArticles) { 
+                            let currentNum = parseInt(index) + 1;
+                        %>
+                        <tr>
+                            <th scope="row">
+                                <%=currentNum %>
+                            </th>
+                            <td>
+                                <%=  info.longestHistoryArticles[index]._id %>
+                            </td>
+                        </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+
+                 <!--The article edited by largest group of registered users. -->
+                <table class="table table-striped leftTable largestGroupArticle">
+                    <thead>
+                        <tr>
+                            <th scope="col">The article edited by largest group of registered users</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <%=info.largestGroupArticle%>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!--The article edited by smallest group of registered users. -->
+                <table class="table table-striped leftTable smallestGroupArticle">
+                    <thead>
+                        <tr>
+                            <th scope="col">The article edited by smallest group of registered users</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <%=info.smallestGroupArticle%>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="rightDiv">
+            <!-- <a href='/pieChart' id='pie'></a> -->
+             <!-- a(href='/pieChart' id='pie') Pie Chart -->
+            <div class="barchart" id="barChartDiv"></div>
+            <div class="piechart" id="pieChartDiv"></div>
+        </div>
+    </div>
+    
+    <script src="/js/backgroundCoverTmp.js"></script>
+
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+
+        google.charts.load('current', { packages: ['corechart'] });
+            // Set a callback to run when the Google Visualization API is loaded.
+        google.charts.setOnLoadCallback(drawChart);
+        //draw BarChart
+        function drawBarChart(){
+            var options = {
+                    'title': "Revision number distribution by year and by user type across the whole dataset ",
+                    'width': '100%',
+                    'height': 500,
+                    vAxis: { gridlines: { count: 9 } }
+                };
+
+            // var data = { 'Nitrogen': 0.78, 'Oxygen': 0.21, 'Other': 0.01 };
+            google.charts.load('current', { packages: ['corechart'] });
+            
+            let data = <%-jsonArray%>;
+            graphData = new google.visualization.arrayToDataTable(data);
+            var chart = new google.visualization.ColumnChart($('#barChartDiv')[0]);
+            chart.draw(graphData, options);  
+        }
+
+        //draw pie chart
+        function drawChart(){
+            var options = {
+                'title': "Revision number distribution by user type across the whole data set",
+                'width': '100%',
+                'height': 500
+            };
+            
+            var data = { 'Nitrogen': 0.78, 'Oxygen': 0.21, 'Other': 0.01 };
+            google.charts.load('current', { packages: ['corechart'] });
+            graphData = new google.visualization.DataTable();
+            graphData.addColumn('string', 'Element');
+            graphData.addColumn('number', 'Percentage');
+             graphData.addRows([
+                ['Bot', <%=info.revisionInBot %>],
+                ['Admin', <%=info.revisionInAdmin %>],
+                ['Regular User', <%=info.revisionInRegularUser %>], 
+                ['anonymous', <%=info.revisionInAnon %>], 
+            ]);
+            var chart = new google.visualization.PieChart($('#pieChartDiv')[0]);
+            chart.draw(graphData, options);
+            drawBarChart();
+        }
+
+        $(document).ready(() => {
+            $('#searchBtn').click((event) => {
+                var inputNum = $('#inputNum').val() ;
+                var patt = /^([1-9]{1})([0-9])*$/;
+                if(patt.test(inputNum)){
+                    //loading logo 
+                    $('.backgroupCover').css('top', window.pageYOffset+"px"); 
+                    $('.backgroupCover').show();
+
+                    //ajax ..
+                    var dataFormSeries = $('#formNumber').serialize();
+                    //alert(dataFormSeries);
+                    $.post('/overall', dataFormSeries).done((data) => {
+                        //console.log('success');
+                        //set titles 
+                        $($('#titleHighestArticles tr th')[1]).html("Titles of the with "+ inputNum +" highest number of revisions");
+                        $($('#titleLowestArticles tr th')[1]).html("Titles of the with " + inputNum + " lowest number of revisions");
+                        $($('#titleLongestHistoryArticles tr th')[1]).html("The top "+ inputNum +" articles with the longest history");
+                        
+                        //set table body  --- hightest articles 
+                        $('.topHightRev tbody').html('');
+                        for(let index in data.highestArticles) {
+                            var th = $("<th scope='row'>"+ (parseInt(index)+1) +"</th>")
+                            var td = $("<td>" + data.highestArticles[index]._id + "</td>")
+                            var trIntbody = $("<tr></tr>").append(th,td);
+                            $('.topHightRev tbody').append(trIntbody);
+                        }
+                        
+                        //set table body --- lowest articles
+                        $('.lowLowRev tbody').html('');
+                        for (let index in data.highestArticles) {
+                            var th = $("<th scope='row'>" + (parseInt(index) + 1) + "</th>")
+                            var td = $("<td>" + data.lowestArticles[index]._id + "</td>")
+                            var trIntbody = $("<tr></tr>").append(th, td);
+                            $('.lowLowRev tbody').append(trIntbody);
+                        }
+                        //set table body --- longest History Articles 
+                        $('.topLongHistory tbody').html('');
+                        for (let index in data.highestArticles) {
+                            var th = $("<th scope='row'>" + (parseInt(index) + 1) + "</th>")
+                            var td = $("<td>" + data.longestHistoryArticles[index]._id + "</td>")
+                            var trIntbody = $("<tr></tr>").append(th, td);
+                            $('.topLongHistory tbody').append(trIntbody);
+                        }
+
+                        $('.backgroupCover').hide();
+                    })
+                    .fail((xhr, status) => {
+                        alert('request fail');
+                        $('.backgroupCover').hide();
+                    });
+                    
+                }else{
+                    alert("please enter valid number")
+                }
+            });
+        })
+    </script>
+</body>
+
+
+
+

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Author page</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/backgroundCover.css">
+
+    <style>
+        .wrapper {
+            margin-top: 80px;
+            margin-left: 2%;
+            background-color: #F8F9FA;
+            width: 96%;
+            height: 60%;
+            float: left;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .selection {
+            /* display: none; */
+            /* visibility: hidden; */
+        }
+
+        #templateTable {
+            display: none;
+        }
+
+        .timestampsTable{
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .articleDiv{
+            margin-top: 10px;   
+        }
+    </style>
+</head>
+
+<body>
+    <table id="templateTable">
+        <thead>
+            <th class="col-md-6"></th>
+            <th class="col-md-6"></th>
+        </thead>
+        <tbody>
+            <tr id='teamplateTr'>
+                <td scope="row">
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <% include templateNav.ejs %>
+
+    <% include backgroundCoverTemplate.ejs %>
+
+    <div class="wrapper">
+        <div class="container">
+            <form name="nameForm">
+                <div class="container">
+                    <div class="row offset-md-2 authorDiv">
+                        <span class="col-md-2 col-form-label">Author: </span>
+                        <input type="text" class="form-control col-md-5" id="authorName" name="author" placeholder="input author name..">
+                        <input type="button" class="btn btn-primary offset-1" value="Search Author" id="searchAuthorBtn">
+                    </div>
+                    
+                    <div class="row selection offset-md-2 articleDiv">
+                        <span class="col-md-2 col-form-label">Articles: </span>
+                        <select class="custom-select form-control col-md-5" id="articleSelection">
+                            <option selected>Choose...</option>
+                            <option value="1">One</option>
+                            <option value="2">Two</option>
+                            <option value="3">Three</option>
+                        </select>
+                        <input type="button" class="btn btn-primary offset-1" value="Search Article" id="searchArticleBtn">
+                    </div>
+
+                    <table class="table table-striped timestampsTable">
+                        <thead id="titleLowestArticles">
+                            <th scope="col">Time stamps</th>
+                            <th scope="col">author</th>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/backgroundCoverTmp.js"></script>
+    <script>
+        $(document).ready(() => {
+            $('#searchAuthorBtn').click((event) => {
+                $('.timestampsTable').hide();
+                if($('#authorName').val() == '') {
+                    alert("plz input author name");
+                    $('.selection').hide();
+                    return ;
+                }
+                //ajax -- get articles with input author
+                $('.backgroupCover').show();
+                $.post('/author', {
+                    authorName: $('#authorName').val()
+                }).done((data)=>{
+                    console.log(data);
+                    let tmpArray = [];
+                    tmpArray.push($("<option selected value=''>choose..</option>"));
+                    for(let index in data) {
+                        let option = $('<option></option>').val(data[index]._id);
+                        $(option).html(data[index]._id + `  [${data[index].num}]`);
+                        tmpArray.push(option);
+                    }
+                    if(data.length == 0) {
+                        $('.selection').hide();
+                    }else{
+                        $('#articleSelection').html('');
+                        $('#articleSelection').append(tmpArray); 
+                        $('.selection').show();
+                    }
+                    $('.backgroupCover').hide();
+                }).fail(err=>{
+                    $('.selection').hide();    
+                    $('.backgroupCover').hide();
+                    console.log(err);
+                })
+            });
+
+            $('#searchArticleBtn').click(event => {
+                if($('#articleSelection').val() == "") {
+                    alert('plz select an article');
+                    $('.timestampsTable').hide();
+                    return ;
+                }
+
+                //ajax process.
+                $('.backgroupCover').show();
+                $.post('/author/article',{
+                    article: $('#articleSelection').val(),
+                    authorName: $('#authorName').val()
+                }).done((data)=>{
+                    //clean table 
+                    $('.timestampsTable tbody').html('');
+                    console.log(data);
+
+                    let timeTableTbody = $('.timestampsTable tbody');
+                    for(let index in data) {
+                        let tr = $('#teamplateTr').clone();
+                        const timestamp = data[index]._id;
+                        const user = data[index].user[0];
+                        $($(tr).children()[0]).html(timestamp);
+                        $($(tr).children()[1]).html(user);
+                        $(timeTableTbody).append(tr);
+                    }
+                    if(data.length > 0) {
+                        $('.timestampsTable').show();
+                    }else{
+                        $('.timestampsTable').hide();
+                    }
+                    $('.backgroupCover').hide();
+                }).fail(data=>{
+                    console.log(data);
+                    $('.backgroupCover').hide();
+                })
+            });
+            
+            $('.selection').hide();
+        });
+    </script>
+</body>
+
+</html>
